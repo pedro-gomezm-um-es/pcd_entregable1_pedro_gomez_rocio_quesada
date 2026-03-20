@@ -1,81 +1,96 @@
 from enum import Enum
 from abc import ABCMeta, abstractmethod
 
-# 1.10: Enumeraciones para tipos y clases (Punto 1.9 y 1.10 del PDF)
 class EClaseNave(Enum):
     Ejecutor = "Ejecutor"
     Eclipse = "Eclipse"
     Soberano = "Soberano"
 
-# 1.1: Clase abstracta base para todas las unidades imperiales
 class Unidad(metaclass=ABCMeta):
     def __init__(self, id_combate, clave_transmision):
-        self.id_combate = id_combate  # Texto [cite: 10]
-        self.clave_transmision = clave_transmision  # Número [cite: 10]
+        self.id_combate = id_combate
+        self.clave_transmision = clave_transmision
 
     @abstractmethod
     def mostrar_info(self):
         pass
 
-# --- SECCIÓN DE GESTIÓN DE REPUESTOS ---
-
 class Repuesto:
     def __init__(self, nombre, proveedor, cantidad, precio):
         self.nombre = nombre
         self.proveedor = proveedor
-        self.__cantidad = cantidad  # 1.13: ATRIBUTO PRIVADO [cite: 13]
+        self.__cantidad = cantidad  # Atributo privado
         self.precio = precio
 
-    @property
-    def cantidad(self):
+    # Método para OBTENER la cantidad
+    def get_cantidad(self):
         return self.__cantidad
 
-    @cantidad.setter
-    def cantidad(self, valor):
+    # Método para CAMBIAR la cantidad con validación
+    def set_cantidad(self, valor):
         if valor >= 0:
             self.__cantidad = valor
         else:
-            raise ValueError("La cantidad de repuestos no puede ser negativa")
+            raise ValueError("La cantidad no puede ser negativa")
 
 class Almacen:
     def __init__(self, nombre, localizacion):
-        self.nombre = nombre # Texto [cite: 11]
-        self.localizacion = localizacion # Texto [cite: 11]
-        self.inventario = {} # 1.12: Diccionario para gestionar objetos Repuesto [cite: 12]
+        self.nombre = nombre
+        self.localizacion = localizacion
+        self.inventario = {}
 
     def añadir_repuesto(self, repuesto):
         self.inventario[repuesto.nombre] = repuesto
 
     def reducir_stock(self, nombre_pieza, cantidad_pedida):
         if nombre_pieza not in self.inventario:
-            raise Exception(f"Error: El repuesto '{nombre_pieza}' no existe en este almacén.")
+            raise Exception(f"Error: El repuesto '{nombre_pieza}' no existe.")
         
         pieza = self.inventario[nombre_pieza]
-        if pieza.cantidad < cantidad_pedida:
-            raise Exception(f"Error: Stock insuficiente de '{nombre_pieza}'. Disponible: {pieza.cantidad}")
         
-        pieza.cantidad -= cantidad_pedida
-        print(f"Stock actualizado: {nombre_pieza} (-{cantidad_pedida}). Restante: {pieza.cantidad}")
+        # IMPORTANTE: Usamos get_cantidad() y set_cantidad()
+        if pieza.get_cantidad() < cantidad_pedida:
+            raise Exception(f"Error: Stock insuficiente. Disponible: {pieza.get_cantidad()}")
+        
+        nueva_qty = pieza.get_cantidad() - cantidad_pedida
+        pieza.set_cantidad(nueva_qty)
+        print(f"Stock actualizado: {nombre_pieza}. Restante: {pieza.get_cantidad()}")
 
-# --- SECCIÓN DE NAVES (JERARQUÍA Y HERENCIA) ---
+    def reponer_stock(self, nombre_pieza, cantidad_nueva):
+        if nombre_pieza in self.inventario:
+            pieza = self.inventario[nombre_pieza]
+            # IMPORTANTE: Usamos get_cantidad() y set_cantidad()
+            pieza.set_cantidad(pieza.get_cantidad() + cantidad_nueva)
+            print(f"[OPERARIO] Stock de {nombre_pieza} aumentado a {pieza.get_cantidad()}")
 
 class Nave(Unidad, metaclass=ABCMeta):
     def __init__(self, id_combate, clave, nombre, catalogo):
         Unidad.__init__(self, id_combate, clave)
-        self.nombre = nombre # Texto [cite: 7]
-        self.catalogo = catalogo # Lista de nombres de piezas (texto) [cite: 7]
+        self.nombre = nombre
+        self.catalogo = catalogo
 
     @abstractmethod
     def realizar_mision(self):
         pass
 
+    # Método para el Comandante: Consultar repuestos en un almacén
+    def consultar_repuestos(self, almacen):
+        print(f"\n[COMANDANTE - {self.nombre}] Consultando stock en {almacen.nombre}...")
+        for nombre, repuesto in almacen.inventario.items():
+            compatible = "SÍ" if nombre in self.catalogo else "NO"
+            print(f"- {nombre}: {repuesto.get_cantidad()} unidades (Compatible: {compatible})")
+
+    # Método para el Comandante: Adquirir repuesto
+    def adquirir_repuesto(self, almacen, nombre_pieza, cantidad):
+        # Usamos la función de mantenimiento que ya tenemos o la metemos aquí
+        solicitar_mantenimiento(self, almacen, nombre_pieza, cantidad)
+
 class EstacionEspacial(Nave):
     def __init__(self, id_combate, clave, nombre, catalogo, tripulacion, pasaje, ubicacion):
         super().__init__(id_combate, clave, nombre, catalogo)
-        self.tripulacion = tripulacion # Número [cite: 9]
-        self.pasaje = pasaje # Número [cite: 9]
-        self.ubicacion = ubicacion # Endor, Cúmulo Raimos, etc. [cite: 9]
-
+        self.tripulacion = tripulacion
+        self.pasaje = pasaje
+        self.ubicacion = ubicacion 
     def mostrar_info(self):
         print(f"\n--- ESTACIÓN ESPACIAL: {self.nombre} ---")
         print(f"ID: {self.id_combate} | Ubicación: {self.ubicacion}")
@@ -87,9 +102,9 @@ class EstacionEspacial(Nave):
 class NaveEstelar(Nave):
     def __init__(self, id_combate, clave, nombre, catalogo, tripulacion, pasaje, clase_nave):
         super().__init__(id_combate, clave, nombre, catalogo)
-        self.tripulacion = tripulacion # Número [cite: 9]
-        self.pasaje = pasaje # Número [cite: 9]
-        self.clase_nave = clase_nave # Enum EClaseNave [cite: 9]
+        self.tripulacion = tripulacion
+        self.pasaje = pasaje
+        self.clase_nave = clase_nave
 
     def mostrar_info(self):
         print(f"\n--- NAVE ESTELAR: {self.nombre} ---")
@@ -102,7 +117,7 @@ class NaveEstelar(Nave):
 class CazaEstelar(Nave):
     def __init__(self, id_combate, clave, nombre, catalogo, dotacion):
         super().__init__(id_combate, clave, nombre, catalogo)
-        self.dotacion = dotacion # Número [cite: 9]
+        self.dotacion = dotacion
 
     def mostrar_info(self):
         print(f"\n--- CAZA ESTELAR: {self.nombre} ---")

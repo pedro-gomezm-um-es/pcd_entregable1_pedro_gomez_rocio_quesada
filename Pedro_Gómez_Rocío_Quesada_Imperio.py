@@ -143,3 +143,30 @@ def solicitar_mantenimiento(nave, almacen, pieza_nombre, cantidad):
     except Exception as e:
         print(f"[ERROR CAPTURADO] {e}")
 
+# 3.b: Código de prueba ejecutable 
+if __name__ == "__main__":
+    # 1. Configurar Almacén
+    almacen_imperial = Almacen("Sector 7G", "Nebulosa Kaliida")
+    r1 = Repuesto("Placas de Titanio", "Sienar Systems", 10, 1500.0)
+    r2 = Repuesto("Célula de Energía", "Kuat Drive Yards", 5, 200.0)
+    almacen_imperial.añadir_repuesto(r1)
+    almacen_imperial.añadir_repuesto(r2)
+
+    # 2. Instanciar Naves
+    estacion = EstacionEspacial("STA-01", 9988, "Estrella de la Muerte", ["Placas de Titanio"], 50000, 10000, "Endor")
+    caza = CazaEstelar("TIE-44", 1122, "TIE Advanced", ["Célula de Energía"], 1)
+
+    # 3. Mostrar Información y Misiones
+    estacion.mostrar_info()
+    estacion.realizar_mision()
+    caza.mostrar_info()
+    
+    # 4. Pruebas de Mantenimiento y Excepciones
+    # Caso Exitoso
+    solicitar_mantenimiento(caza, almacen_imperial, "Célula de Energía", 2)
+    
+    # Caso Error: Pieza no compatible
+    solicitar_mantenimiento(estacion, almacen_imperial, "Célula de Energía", 1)
+    
+    # Caso Error: Stock insuficiente
+    solicitar_mantenimiento(caza, almacen_imperial, "Célula de Energía", 10)
